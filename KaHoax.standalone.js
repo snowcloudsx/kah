@@ -454,7 +454,7 @@
     }
     function mapCorrectButtons(question) {
         const btns = getAnswerButtons();
-        const choices = (questionChoices[qi] || []);
+        const choices = (questionChoices[info.questionNum] || []);
         const correctTexts = (question.answers || []).map(function (i) { return choices[i] || ''; });
         const result = [];
         const used = new Set();
@@ -475,6 +475,10 @@
             }
         });
         console.log('[KaHoax] mapCorrectButtons -> ' + result.length + ' buttons');
+        if (result.length === 0) {
+            (question.answers || []).forEach(function (i) { if (btns[i]) result.push(btns[i]); });
+            console.log('[KaHoax] mapCorrectButtons fallback -> ' + result.length);
+        }
         return result;
     }
 
