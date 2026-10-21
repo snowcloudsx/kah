@@ -12,6 +12,7 @@
     let lastValidQuizID = null, isAutoSearching = false;
     let networkQuizId = null;
     let answeredThisRound = false;
+    let detectionFailed = false;
 
     function log(msg) { try { console.log('[KaHoax]', msg); } catch (e) {} }
 
@@ -398,6 +399,7 @@
     }
 
     function autoLoadByQuestion() {
+        if (detectionFailed) { console.log('[KaHoax] auto-detect disabled (previous fail)'); return; }
         log('autoLoadByQuestion()');
         const detected = detectQuizIdFromGlobals();
         if (detected) {
@@ -414,7 +416,7 @@
                 status.textContent = 'Loaded: ' + (d.title || detected);
                 isAutoSearching = false;
                 onQuestionStart();
-            }).catch(function () { isAutoSearching = false; fallbackTextSearch(); });
+            }).catch(function () { detectionFailed = true; isAutoSearching = false; fallbackTextSearch(); });
             return;
         }
         fallbackTextSearch();
@@ -429,7 +431,7 @@
         const url = PROXY + '/rest/kahoots/?query=' + encodeURIComponent(qText);
         fetch(url).then(function (r) { return r.json(); }).then(function (data) {
             const results = (data.entities && data.entities.length > 0) ? data.entities : [];
-            if (!results.length) { isAutoSearching = false; status.textContent = 'No match'; return; }
+            if (!results.length) { isAutoSearching = false; detectionFailed = true; status.textContent = 'No match - enter quiz ID manually'; return; }
             const uuid = results[0].card.uuid;
             const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(uuid);
             return fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
@@ -444,7 +446,7 @@
                 isAutoSearching = false;
                 onQuestionStart();
             });
-        }).catch(function (e) { console.error(e); isAutoSearching = false; status.textContent = 'Auto-detect error'; });
+        }).catch(function (e) { console.error(e); isAutoSearching = false; detectionFailed = true; status.textContent = 'Auto-detect failed - enter quiz ID manually'; });
     }
 
     function getAnswerButtons() {
@@ -588,6 +590,10 @@
                 }
             }
         }
-        qLabel.textContent = 'Question ' + (info.questionNum + 1) + ' / ' + (info.numQuestions > 0 ? info.numQuestions : '?');
+        // Ensure UI present
+        if (document.body && !document.getElementById('kahox-ui')) {
+            console.log('[KaHoax] UI missing in main loop, re-appending');
+            document.body.appendChild(ui);
+        }
     }, 1);
 })();
