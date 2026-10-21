@@ -226,6 +226,10 @@
     enterBtn.textContent = 'Load';
     enterBtn.style.cssText = 'flex:1;height:30px;border:none;border-radius:5px;background:#6c757d;color:#fff;cursor:pointer;';
     btnRow.appendChild(enterBtn);
+    const scanBtn = document.createElement('button');
+    scanBtn.textContent = 'Scan';
+    scanBtn.style.cssText = 'flex:1;height:30px;border:none;border-radius:5px;background:#0088ff;color:#fff;cursor:pointer;';
+    btnRow.appendChild(scanBtn);
     body.appendChild(btnRow);
 
     function makeToggle(label, initial, onChange) {
@@ -313,6 +317,30 @@
         });
     }
     enterBtn.addEventListener('click', loadQuizInput);
+    scanBtn.addEventListener('click', function () { scanNow(); });
+
+    function scanNow() {
+        console.log('[KaHoax] === SCAN START ===');
+        status.textContent = 'Scanning...';
+        const nid = detectQuizIdFromGlobals();
+        console.log('[KaHoax] detectQuizIdFromGlobals ->', nid);
+        if (nid) {
+            console.log('[KaHoax] quiz id found via detection: ' + nid);
+            input.value = nid;
+            loadQuizInput();
+            return;
+        }
+        console.log('[KaHoax] no global/network id; trying question text search');
+        const qt = getQuestionText();
+        console.log('[KaHoax] question text: ' + (qt || 'NONE'));
+        if (qt) {
+            isAutoSearching = false;
+            autoLoadByQuestion();
+        } else {
+            status.textContent = 'No question text found';
+            console.log('[KaHoax] scan failed: no question text');
+        }
+    }
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadQuizInput(); });
 
     function searchPublicUUID(searchTerm) {
@@ -351,6 +379,7 @@
     }
 
     function fallbackTextSearch() {
+        console.log('[KaHoax] fallbackTextSearch()');
         const qText = getQuestionText();
         if (!qText) { isAutoSearching = false; return; }
         isAutoSearching = true;
