@@ -6,6 +6,7 @@
 
     let questions = [];
     let questionTexts = [];
+    let questionChoices = [];
     const info = { numQuestions: 0, questionNum: -1, lastAnsweredQuestion: -1, ILSetQuestion: -1 };
     let PPT = 900, Answered_PPT = 900, autoAnswer = true, showAnswers = true, inputLag = 100;
     let lastValidQuizID = null, isAutoSearching = false;
@@ -284,7 +285,20 @@
     document.addEventListener('mousemove', function (e) { if (dragging) { ui.style.left = (e.clientX - ox) + 'px'; ui.style.top = (e.clientY - oy) + 'px'; } });
     document.addEventListener('mouseup', function () { dragging = false; });
 
-    document.body.appendChild(ui);
+    // Re-apply highlight periodically in case DOM re-renders
+    setInterval(function () {
+        if (!showAnswers) return;
+        const q = questions[info.questionNum];
+        if (!q) return;
+        const btns = getAnswerButtons();
+        if (!btns.length) return;
+        // only highlight if not already
+        const already = btns.some(function (b) { return b.style.outline && b.style.outline.indexOf('22c55e') !== -1; });
+        if (!already) {
+            console.log('[KaHoax] re-applying highlight');
+            highlightAnswers(q);
+        }
+    }, 500);
     console.log('[KaHoax] UI appended to body');
 
     setInterval(function () {
@@ -309,6 +323,7 @@
         }).then(function (data) {
             questions = parseQuestions(data.questions);
             questionTexts = (data.questions || []).map(function (q) { return q.question || q.title || ''; });
+            questionChoices = (data.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
             info.numQuestions = questions.length;
             lastValidQuizID = quizID;
             input.style.backgroundColor = 'green';
@@ -369,6 +384,7 @@
             fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
                 questions = parseQuestions(d.questions);
                 questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
+                questionChoices = (d.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
                 info.numQuestions = questions.length;
                 lastValidQuizID = detected;
                 input.value = detected;
@@ -397,6 +413,7 @@
             return fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
                 questions = parseQuestions(d.questions);
                 questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
+                questionChoices = (d.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
                 info.numQuestions = questions.length;
                 lastValidQuizID = uuid;
                 input.value = uuid;
@@ -408,42 +425,75 @@
         }).catch(function (e) { console.error(e); isAutoSearching = false; status.textContent = 'Auto-detect error'; });
     }
 
+    function getAnswerButtons() {
+        const sels = [
+            '[data-functional-selector^="answer-"]',
+            'button[data-functional-selector^="answer-"]',
+            '[class*="answer"] button',
+            '[class*="choice"] button',
+            '[class*="Answer"] button'
+        ];
+        for (let i = 0; i < sels.length; i++) {
+            try {
+                const els = Array.from(document.querySelectorAll(sels[i])).filter(function (b) { return b.offsetParent !== null && b.offsetWidth > 20; });
+                if (els.length >= 2) return els;
+            } catch (e) {}
+        }
+        return [];
+    }
+
     function highlightAnswers(question) {
-        (question.answers || []).forEach(function (answer) {
-            setTimeout(function () {
-                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, '*');
-                if (btn) btn.style.backgroundColor = 'rgb(0,255,0)';
-            }, 0);
+        const btns = mapCorrectButtons(question);
+        btns.forEach(function (btn) {
+            btn.style.outline = '4px solid #22c55e';
+            btn.style.outlineOffset = '-4px';
+            btn.style.boxShadow = '0 0 20px rgba(34,197,94,0.6)';
+            btn.style.backgroundColor = 'rgba(34,197,94,0.2)';
         });
-        (question.incorrectAnswers || []).forEach(function (answer) {
-            setTimeout(function () {
-                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, '*');
-                if (btn) btn.style.backgroundColor = 'rgb(255,0,0)';
-            }, 0);
+        console.log('[KaHoax] highlighted ' + btns.length + ' buttons');
+    }
+    function mapCorrectButtons(question) {
+        const btns = getAnswerButtons();
+        const choices = (questionChoices[qi] || []);
+        const correctTexts = (question.answers || []).map(function (i) { return choices[i] || ''; });
+        const result = [];
+        const used = new Set();
+        correctTexts.forEach(function (ct) {
+            let best = -1, bestScore = 0;
+            btns.forEach(function (b, di) {
+                if (used.has(di)) return;
+                const bt = (b.getAttribute('aria-label') || b.textContent || '').trim();
+                const sc = similarity(ct, bt);
+                if (sc > bestScore) { bestScore = sc; best = di; }
+            });
+            if (best >= 0 && bestScore >= 0.3) {
+                result.push(btns[best]);
+                used.add(best);
+            } else if (best >= 0) {
+                // fallback: push by index if available
+                if (btns[best]) { result.push(btns[best]); used.add(best); }
+            }
         });
+        console.log('[KaHoax] mapCorrectButtons -> ' + result.length + ' buttons');
+        return result;
     }
 
     function answer(question, time) {
         Answered_PPT = PPT;
         const delay = (question.type === 'multiple_select_quiz') ? 60 : 0;
         setTimeout(function () {
-            if (question.type === 'quiz' || question.type === 'multiple_select_quiz') {
-                const indices = question.answers || [];
-                indices.forEach(function (a, idx) {
-                    setTimeout(function () {
-                        const btn = FindByAttributeValue('data-functional-selector', 'answer-' + a, '*');
-                        console.log('[KaHoax] clicking answer-' + a, btn);
-                        if (btn) btn.click();
-                    }, idx * 50);
-                });
-                if (question.type === 'multiple_select_quiz') {
-                    setTimeout(function () {
-                        const btn = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
-                        if (btn) btn.click();
-                    }, (indices.length * 50) + 100);
-                }
+            const btns = mapCorrectButtons(question);
+            console.log('[KaHoax] answer() clicking ' + btns.length + ' buttons');
+            btns.forEach(function (btn, idx) {
+                setTimeout(function () { if (btn) btn.click(); }, idx * 50);
+            });
+            if (question.type === 'multiple_select_quiz') {
+                setTimeout(function () {
+                    const submit = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
+                    if (submit) submit.click();
+                }, (btns.length * 50) + 100);
             }
-        }, time - delay);
+        }, Math.max(0, time - delay));
     }
 
     function normalizeText(t) {
