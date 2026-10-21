@@ -172,7 +172,26 @@
         };
     } catch (e) {}
 
-    // --- UI ---
+    // --- WebSocket interception ---
+    try {
+        const OrigWS = window.WebSocket;
+        if (OrigWS) {
+            function WrappedWebSocket(url, protocols) {
+                const ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
+                try { scanUrlForQuizId(url); } catch (e) {}
+                ws.addEventListener('message', function (e) {
+                    try { scanTextForQuizId(typeof e.data === 'string' ? e.data : ''); } catch (err) {}
+                });
+                return ws;
+            }
+            WrappedWebSocket.prototype = OrigWS.prototype;
+            WrappedWebSocket.CONNECTING = OrigWS.CONNECTING;
+            WrappedWebSocket.OPEN = OrigWS.OPEN;
+            WrappedWebSocket.CLOSING = OrigWS.CLOSING;
+            WrappedWebSocket.CLOSED = OrigWS.CLOSED;
+            window.WebSocket = WrappedWebSocket;
+        }
+    } catch (e) {}
     const ui = document.createElement('div');
     ui.style.cssText = 'position:fixed;top:5%;left:5%;width:320px;max-width:90vw;background:#1e1e1e;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.5);z-index:9999;font-size:14px;color:#fff;font-family:Montserrat,Helvetica,Arial,sans-serif;overflow:auto;max-height:90vh;';
     const handle = document.createElement('div');
