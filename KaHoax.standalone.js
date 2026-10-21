@@ -407,13 +407,13 @@
     function highlightAnswers(question) {
         (question.answers || []).forEach(function (answer) {
             setTimeout(function () {
-                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, 'button');
+                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, '*');
                 if (btn) btn.style.backgroundColor = 'rgb(0,255,0)';
             }, 0);
         });
         (question.incorrectAnswers || []).forEach(function (answer) {
             setTimeout(function () {
-                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, 'button');
+                const btn = FindByAttributeValue('data-functional-selector', 'answer-' + answer, '*');
                 if (btn) btn.style.backgroundColor = 'rgb(255,0,0)';
             }, 0);
         });
@@ -435,7 +435,7 @@
                     }, 0);
                 });
                 setTimeout(function () {
-                    const btn = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', 'button');
+                    const btn = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
                     if (btn) btn.click();
                 }, 0);
             }
@@ -453,7 +453,7 @@
     setInterval(function () {
         const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
         if (textElement) info.questionNum = +textElement.textContent - 1;
-        const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', 'button');
+        const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', '*');
         if (hasBtns && !answeredThisRound) {
             console.log('[KaHoax] answer buttons detected, triggering');
             answeredThisRound = true;
