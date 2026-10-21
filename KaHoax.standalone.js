@@ -1,5 +1,6 @@
 (function () {
     'use strict';
+    console.log('[KaHoax] SCRIPT LOADED');
     const Version = '2.0';
     const PROXY = 'https://damp-leaf-16aa.johnwee.workers.dev';
 
@@ -131,14 +132,14 @@
         if (networkQuizId) return;
         if (!txt) return;
         let m = txt.match(/"quizId"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
-        if (m) { networkQuizId = m[1]; return; }
+        if (m) { networkQuizId = m[1]; console.log('[KaHoax] network scan found quizId: ' + m[1]); return; }
         m = txt.match(/"uuid"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
         if (m) { networkQuizId = m[1]; }
     }
     function scanUrlForQuizId(url) {
         if (networkQuizId || !url) return;
         const m = String(url).match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-        if (m) networkQuizId = m[1];
+        if (m) { networkQuizId = m[1]; console.log('[KaHoax] url scan found uuid: ' + m[1]); }
     }
     try {
         const origFetch = window.fetch;
@@ -278,6 +279,11 @@
     document.addEventListener('mouseup', function () { dragging = false; });
 
     document.body.appendChild(ui);
+    console.log('[KaHoax] UI appended to body');
+
+    setInterval(function () {
+        console.log('[KaHoax] status: qNum=' + info.questionNum + ' loadedQs=' + questions.length + ' autoSearch=' + isAutoSearching + ' netId=' + (networkQuizId || 'none'));
+    }, 2000);
 
     // url auto-detect
     (function () {
@@ -418,6 +424,7 @@
         const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
         if (textElement) info.questionNum = +textElement.textContent - 1;
         if (FindByAttributeValue('data-functional-selector', 'answer-0', 'button') && info.lastAnsweredQuestion != info.questionNum) {
+            console.log('[KaHoax] new question detected, answer buttons present');
             info.lastAnsweredQuestion = info.questionNum;
             if (questions.length === 0 && !isAutoSearching) autoLoadByQuestion();
             else onQuestionStart();
