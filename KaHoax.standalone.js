@@ -522,6 +522,47 @@
         return result;
     }
 
+    function triggerClick(el) {
+        if (!el) return;
+        // try React fiber onClick
+        try {
+            const propsKey = Object.keys(el).find(k => k.startsWith('__reactProps') || k.startsWith('__reactFiber'));
+            if (propsKey && el[propsKey] && typeof el[propsKey].onClick === 'function') {
+                el[propsKey].onClick(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                return;
+            }
+        } catch (e) {}
+        // fiber walk
+        try {
+            const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
+            if (fiberKey) {
+                let fiber = el[fiberKey];
+                let depth = 0;
+                while (fiber && depth < 30) {
+                    const onClick = fiber.memoizedProps && fiber.memoizedProps.onClick;
+                    if (typeof onClick === 'function') {
+                        onClick(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                        return;
+                    }
+                    fiber = fiber.return;
+                    depth++;
+                }
+            }
+        } catch (e) {}
+        // native event sequence
+        try {
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
+            el.dispatchEvent(new PointerEvent('pointerdown', { ...opts, pointerId: 1 }));
+            el.dispatchEvent(new MouseEvent('mousedown', opts));
+            el.dispatchEvent(new PointerEvent('pointerup', { ...opts, pointerId: 1 }));
+            el.dispatchEvent(new MouseEvent('mouseup', opts));
+            el.dispatchEvent(new MouseEvent('click', opts));
+        } catch (e) {}
+        try { el.click(); } catch (e) {}
+    }
     function answer(question, time) {
         Answered_PPT = PPT;
         const delay = (question.type === 'multiple_select_quiz') ? 60 : 0;
@@ -533,7 +574,8 @@
                     const key = (+a + 1).toString();
                     window.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
                     const btn = FindByAttributeValue('data-functional-selector', 'answer-' + a, '*');
-                    if (btn) btn.click();
+                    console.log('[KaHoax] triggerClick answer-' + a, btn);
+                    triggerClick(btn);
                 }, idx * 50);
             });
             if (question.type === 'multiple_select_quiz') {
