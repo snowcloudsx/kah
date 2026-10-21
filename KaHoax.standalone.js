@@ -367,6 +367,10 @@
             lastValidQuizID = quizID;
             input.style.backgroundColor = 'green';
             status.textContent = 'Loaded: ' + (data.title || quizID);
+            const qn = getQuestionNumberFromDOM();
+            if (qn !== null && !isNaN(qn)) info.questionNum = qn;
+            answeredThisRound = false;
+            onQuestionStart();
         }).catch(function () {
             input.style.backgroundColor = 'red';
             status.textContent = 'Lookup failed, searching...';
