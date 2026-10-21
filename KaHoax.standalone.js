@@ -213,6 +213,7 @@
         }
     } catch (e) {}
     const ui = document.createElement('div');
+    ui.id = 'kahox-ui';
     ui.style.cssText = 'position:fixed;top:5%;left:5%;width:320px;max-width:90vw;background:#1e1e1e;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.5);z-index:9999;font-size:14px;color:#fff;font-family:Montserrat,Helvetica,Arial,sans-serif;overflow:auto;max-height:90vh;';
     const handle = document.createElement('div');
     handle.style.cssText = 'height:36px;line-height:36px;padding-left:12px;background:#2c2c2c;border-radius:10px 10px 0 0;cursor:grab;display:flex;align-items:center;';
@@ -315,7 +316,7 @@
     console.log('[KaHoax] UI appended to body');
     function ensureUI() {
         if (!document.body) return;
-        if (!ui.parentNode) {
+        if (!document.getElementById('kahox-ui')) {
             console.log('[KaHoax] UI removed, re-appending');
             document.body.appendChild(ui);
         }
