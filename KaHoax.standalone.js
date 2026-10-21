@@ -9,6 +9,8 @@
     let lastValidQuizID = null, isAutoSearching = false;
     let networkQuizId = null;
 
+    function log(msg) { try { console.log('[KaHoax]', msg); } catch (e) {} }
+
     function FindByAttributeValue(attribute, value, element_type) {
         element_type = element_type || '*';
         const All = document.getElementsByTagName(element_type);
@@ -16,7 +18,8 @@
     }
 
     function detectQuizIdFromGlobals() {
-        if (networkQuizId && isValidGameId(networkQuizId)) return networkQuizId;
+        log('detectQuizIdFromGlobals()');
+        if (networkQuizId && isValidGameId(networkQuizId)) { log('found via network: ' + networkQuizId); return networkQuizId; }
         const paths = [
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quizId; },
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quiz && window.kahoot.gameBlock.quiz.uuid; },
@@ -283,6 +286,7 @@
     })();
 
     function loadQuizInput() {
+        log('loadQuizInput: ' + input.value);
         const raw = input.value;
         const quizID = sanitizeInput(raw);
         const url = PROXY + '/api-proxy/' + encodeURIComponent(quizID);
@@ -320,6 +324,7 @@
     }
 
     function autoLoadByQuestion() {
+        log('autoLoadByQuestion()');
         const detected = detectQuizIdFromGlobals();
         if (detected) {
             isAutoSearching = true;
@@ -402,6 +407,7 @@
     }
 
     function onQuestionStart() {
+        log('onQuestionStart q=' + info.questionNum);
         const question = questions[info.questionNum];
         if (!question) return;
         if (showAnswers) highlightAnswers(question);
