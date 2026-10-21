@@ -24,6 +24,19 @@
     function detectQuizIdFromGlobals() {
         log('detectQuizIdFromGlobals()');
         if (networkQuizId && isValidGameId(networkQuizId)) { log('found via network: ' + networkQuizId); return networkQuizId; }
+        // localStorage game session
+        try {
+            const raw = localStorage.getItem('kahoot-game_session');
+            if (raw) {
+                const obj = JSON.parse(raw);
+                const candidates = [];
+                if (obj.trainingContentId) candidates.push(String(obj.trainingContentId).split('_')[0]);
+                if (obj.gameApiId) candidates.push(String(obj.gameApiId));
+                for (let i = 0; i < candidates.length; i++) {
+                    if (isValidGameId(candidates[i])) { log('found via localStorage: ' + candidates[i]); return candidates[i]; }
+                }
+            }
+        } catch (e) {}
         const paths = [
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quizId; },
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quiz && window.kahoot.gameBlock.quiz.uuid; },
@@ -537,6 +550,10 @@
     setInterval(function () {
         const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
         if (textElement) info.questionNum = +textElement.textContent - 1;
+        else {
+            const tm = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
+            if (tm) info.questionNum = +tm[1] - 1;
+        }
         const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', '*');
         if (hasBtns && !answeredThisRound) {
             console.log('[KaHoax] answer buttons detected, triggering');
