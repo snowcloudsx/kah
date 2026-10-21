@@ -7,6 +7,7 @@
     const info = { numQuestions: 0, questionNum: -1, lastAnsweredQuestion: -1, ILSetQuestion: -1 };
     let PPT = 900, Answered_PPT = 900, autoAnswer = true, showAnswers = true, inputLag = 100;
     let lastValidQuizID = null, isAutoSearching = false;
+    let networkQuizId = null;
 
     function FindByAttributeValue(attribute, value, element_type) {
         element_type = element_type || '*';
@@ -15,6 +16,7 @@
     }
 
     function detectQuizIdFromGlobals() {
+        if (networkQuizId && isValidGameId(networkQuizId)) return networkQuizId;
         const paths = [
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quizId; },
             function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quiz && window.kahoot.gameBlock.quiz.uuid; },
@@ -120,6 +122,55 @@
         });
         return out;
     }
+
+    // --- Network interception to capture quiz id ---
+    function scanTextForQuizId(txt) {
+        if (networkQuizId) return;
+        if (!txt) return;
+        let m = txt.match(/"quizId"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
+        if (m) { networkQuizId = m[1]; return; }
+        m = txt.match(/"uuid"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
+        if (m) { networkQuizId = m[1]; }
+    }
+    function scanUrlForQuizId(url) {
+        if (networkQuizId || !url) return;
+        const m = String(url).match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+        if (m) networkQuizId = m[1];
+    }
+    try {
+        const origFetch = window.fetch;
+        if (origFetch) {
+            window.fetch = function () {
+                try { scanUrlForQuizId(arguments[0] && (typeof arguments[0] === 'string' ? arguments[0] : arguments[0].url)); } catch (e) {}
+                const p = origFetch.apply(this, arguments);
+                if (p && typeof p.then === 'function') {
+                    p.then(function (res) {
+                        try {
+                            const c = res.clone();
+                            c.text().then(scanTextForQuizId).catch(function () {});
+                        } catch (e) {}
+                        return res;
+                    }).catch(function () {});
+                }
+                return p;
+            };
+        }
+    } catch (e) {}
+    try {
+        const origOpen = XMLHttpRequest.prototype.open;
+        const origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+            this._kh_url = url;
+            return origOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function () {
+            try { scanUrlForQuizId(this._kh_url); } catch (e) {}
+            this.addEventListener('load', function () {
+                try { scanTextForQuizId(this.responseText); } catch (e) {}
+            });
+            return origSend.apply(this, arguments);
+        };
+    } catch (e) {}
 
     // --- UI ---
     const ui = document.createElement('div');
