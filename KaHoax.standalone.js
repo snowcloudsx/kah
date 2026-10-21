@@ -313,6 +313,14 @@
         }
     }, 500);
     console.log('[KaHoax] UI appended to body');
+    function ensureUI() {
+        if (!document.body) return;
+        if (!ui.parentNode) {
+            console.log('[KaHoax] UI removed, re-appending');
+            document.body.appendChild(ui);
+        }
+    }
+    setInterval(ensureUI, 1000);
 
     setInterval(function () {
         console.log('[KaHoax] status: qNum=' + info.questionNum + ' loadedQs=' + questions.length + ' autoSearch=' + isAutoSearching + ' netId=' + (networkQuizId || 'none'));
@@ -394,7 +402,7 @@
         if (detected) {
             isAutoSearching = true;
             const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(detected);
-            fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
+            fetch(detailUrl).then(function (r) { if (!r.ok) throw new Error('not found'); return r.json(); }).then(function (d) {
                 questions = parseQuestions(d.questions);
                 questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
                 questionChoices = (d.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
