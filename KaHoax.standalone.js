@@ -291,19 +291,6 @@
     qLabel.textContent = 'Question 0 / ?';
     body.appendChild(qLabel);
 
-    const sliderWrap = document.createElement('div');
-    sliderWrap.style.cssText = 'margin:8px 0;';
-    const sliderLabel = document.createElement('div');
-    sliderLabel.style.cssText = 'font-size:12px;margin-bottom:4px;';
-    sliderLabel.textContent = 'Points per question: ~900';
-    const slider = document.createElement('input');
-    slider.type = 'range'; slider.min = '500'; slider.max = '1000'; slider.value = '900';
-    slider.style.width = '100%';
-    slider.addEventListener('input', function () { PPT = +slider.value; sliderLabel.textContent = 'Points per question: ~' + PPT; });
-    sliderWrap.appendChild(sliderLabel);
-    sliderWrap.appendChild(slider);
-    body.appendChild(sliderWrap);
-
     const closeBtn = document.createElement('div');
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'position:absolute;top:0;right:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#ff4d4d;border-radius:0 10px 0 0;cursor:pointer;';
@@ -642,7 +629,7 @@
         const question = questions[info.questionNum];
         if (!question) return;
         if (showAnswers) highlightAnswers(question);
-        if (autoAnswer) answer(question, Math.max(0, (question.time - question.time / (500 / (PPT - 500))) - inputLag));
+        if (autoAnswer) answer(question, 0);
     }
 
     setInterval(function () {
