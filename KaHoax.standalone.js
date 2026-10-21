@@ -526,16 +526,21 @@
         Answered_PPT = PPT;
         const delay = (question.type === 'multiple_select_quiz') ? 60 : 0;
         setTimeout(function () {
-            const btns = mapCorrectButtons(question);
-            console.log('[KaHoax] answer() clicking ' + btns.length + ' buttons');
-            btns.forEach(function (btn, idx) {
-                setTimeout(function () { if (btn) btn.click(); }, idx * 50);
+            const indices = question.answers || [];
+            console.log('[KaHoax] answer() firing keys for', indices);
+            indices.forEach(function (a, idx) {
+                setTimeout(function () {
+                    const key = (+a + 1).toString();
+                    window.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
+                    const btn = FindByAttributeValue('data-functional-selector', 'answer-' + a, '*');
+                    if (btn) btn.click();
+                }, idx * 50);
             });
             if (question.type === 'multiple_select_quiz') {
                 setTimeout(function () {
                     const submit = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
                     if (submit) submit.click();
-                }, (btns.length * 50) + 100);
+                }, (indices.length * 50) + 100);
             }
         }, Math.max(0, time - delay));
     }
