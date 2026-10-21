@@ -5,6 +5,7 @@
     const PROXY = 'https://damp-leaf-16aa.johnwee.workers.dev';
 
     let questions = [];
+    let questionTexts = [];
     const info = { numQuestions: 0, questionNum: -1, lastAnsweredQuestion: -1, ILSetQuestion: -1 };
     let PPT = 900, Answered_PPT = 900, autoAnswer = true, showAnswers = true, inputLag = 100;
     let lastValidQuizID = null, isAutoSearching = false;
@@ -307,6 +308,7 @@
             return r.json();
         }).then(function (data) {
             questions = parseQuestions(data.questions);
+            questionTexts = (data.questions || []).map(function (q) { return q.question || q.title || ''; });
             info.numQuestions = questions.length;
             lastValidQuizID = quizID;
             input.style.backgroundColor = 'green';
@@ -366,6 +368,7 @@
             const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(detected);
             fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
                 questions = parseQuestions(d.questions);
+                questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
                 info.numQuestions = questions.length;
                 lastValidQuizID = detected;
                 input.value = detected;
@@ -393,6 +396,7 @@
             const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(uuid);
             return fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
                 questions = parseQuestions(d.questions);
+                questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
                 info.numQuestions = questions.length;
                 lastValidQuizID = uuid;
                 input.value = uuid;
@@ -423,31 +427,57 @@
         Answered_PPT = PPT;
         const delay = (question.type === 'multiple_select_quiz') ? 60 : 0;
         setTimeout(function () {
-            if (question.type === 'quiz') {
-                const key = (+question.answers[0] + 1).toString();
-                window.dispatchEvent(new KeyboardEvent('keydown', { key: key }));
-            }
-            if (question.type === 'multiple_select_quiz') {
-                (question.answers || []).forEach(function (a) {
+            if (question.type === 'quiz' || question.type === 'multiple_select_quiz') {
+                const indices = question.answers || [];
+                indices.forEach(function (a, idx) {
                     setTimeout(function () {
-                        const key = (+a + 1).toString();
-                        window.dispatchEvent(new KeyboardEvent('keydown', { key: key }));
-                    }, 0);
+                        const btn = FindByAttributeValue('data-functional-selector', 'answer-' + a, '*');
+                        console.log('[KaHoax] clicking answer-' + a, btn);
+                        if (btn) btn.click();
+                    }, idx * 50);
                 });
-                setTimeout(function () {
-                    const btn = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
-                    if (btn) btn.click();
-                }, 0);
+                if (question.type === 'multiple_select_quiz') {
+                    setTimeout(function () {
+                        const btn = FindByAttributeValue('data-functional-selector', 'multi-select-submit-button', '*');
+                        if (btn) btn.click();
+                    }, (indices.length * 50) + 100);
+                }
             }
         }, time - delay);
     }
 
+    function normalizeText(t) {
+        return (t || '').toLowerCase().replace(/<[^>]*>/g, '').replace(/[^\\w\\s]/g, ' ').replace(/\\s+/g, ' ').trim();
+    }
+    function similarity(a, b) {
+        const na = normalizeText(a), nb = normalizeText(b);
+        if (!na || !nb) return 0;
+        if (na === nb) return 1;
+        if (na.includes(nb) || nb.includes(na)) return 0.9;
+        const ta = new Set(na.split(' ')), tb = new Set(nb.split(' '));
+        const inter = [...ta].filter(x => tb.has(x)).length;
+        const union = new Set([...ta, ...tb]).size;
+        return union ? inter / union : 0;
+    }
+    function matchQuestionIndex() {
+        const live = getQuestionText();
+        if (!live || !questionTexts.length) return info.questionNum >= 0 ? info.questionNum : 0;
+        let best = 0, bestScore = 0;
+        for (let i = 0; i < questionTexts.length; i++) {
+            const sc = similarity(live, questionTexts[i]);
+            if (sc > bestScore) { bestScore = sc; best = i; }
+        }
+        console.log('[KaHoax] matchQuestionIndex -> ' + best + ' score=' + bestScore.toFixed(2));
+        return best;
+    }
+
     function onQuestionStart() {
-        log('onQuestionStart q=' + info.questionNum);
+        info.questionNum = matchQuestionIndex();
+        console.log('[KaHoax] onQuestionStart q=' + info.questionNum);
         const question = questions[info.questionNum];
         if (!question) return;
         if (showAnswers) highlightAnswers(question);
-        if (autoAnswer) answer(question, (question.time - question.time / (500 / (PPT - 500))) - inputLag);
+        if (autoAnswer) answer(question, Math.max(0, (question.time - question.time / (500 / (PPT - 500))) - inputLag));
     }
 
     setInterval(function () {
