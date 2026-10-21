@@ -9,6 +9,7 @@
     let PPT = 900, Answered_PPT = 900, autoAnswer = true, showAnswers = true, inputLag = 100;
     let lastValidQuizID = null, isAutoSearching = false;
     let networkQuizId = null;
+    let answeredThisRound = false;
 
     function log(msg) { try { console.log('[KaHoax]', msg); } catch (e) {} }
 
@@ -452,11 +453,17 @@
     setInterval(function () {
         const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
         if (textElement) info.questionNum = +textElement.textContent - 1;
-        if (FindByAttributeValue('data-functional-selector', 'answer-0', 'button') && info.lastAnsweredQuestion != info.questionNum) {
-            console.log('[KaHoax] new question detected, answer buttons present');
+        const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', 'button');
+        if (hasBtns && !answeredThisRound) {
+            console.log('[KaHoax] answer buttons detected, triggering');
+            answeredThisRound = true;
+            if (textElement) info.questionNum = +textElement.textContent - 1;
+            else info.questionNum = info.questionNum + 1;
             info.lastAnsweredQuestion = info.questionNum;
             if (questions.length === 0 && !isAutoSearching) autoLoadByQuestion();
             else onQuestionStart();
+        } else if (!hasBtns) {
+            answeredThisRound = false;
         }
         if (autoAnswer && info.ILSetQuestion != info.questionNum) {
             const ppt = Answered_PPT;
