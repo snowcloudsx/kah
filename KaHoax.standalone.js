@@ -14,6 +14,38 @@
         for (let i = 0; i < All.length; i++) if (All[i].getAttribute(attribute) == value) return All[i];
     }
 
+    function detectQuizIdFromGlobals() {
+        const paths = [
+            function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quizId; },
+            function () { return window.kahoot && window.kahoot.gameBlock && window.kahoot.gameBlock.quiz && window.kahoot.gameBlock.quiz.uuid; },
+            function () { return window.kahoot && window.kahoot.quizId; },
+            function () { return window.kahoot && window.kahoot.quiz && window.kahoot.quiz.uuid; },
+            function () { return window.__NEXT_DATA__ && window.__NEXT_DATA__.props && window.__NEXT_DATA__.props.pageProps && window.__NEXT_DATA__.props.pageProps.quizId; },
+            function () { return window.__NEXT_DATA__ && window.__NEXT_DATA__.props && window.__NEXT_DATA__.props.pageProps && window.__NEXT_DATA__.props.pageProps.gameBlock && window.__NEXT_DATA__.props.pageProps.gameBlock.quizId; },
+            function () { return window.__NEXT_DATA__ && window.__NEXT_DATA__.props && window.__NEXT_DATA__.props.pageProps && window.__NEXT_DATA__.props.pageProps.kahoot && window.__NEXT_DATA__.props.pageProps.kahoot.uuid; },
+            function () { return window.__KAHOOT_STATE__ && window.__KAHOOT_STATE__.quizId; },
+            function () { return window.__KAHOOT_STATE__ && window.__KAHOOT_STATE__.quiz && window.__KAHOOT_STATE__.quiz.uuid; },
+            function () { return window.appState && window.appState.quizId; }
+        ];
+        for (let i = 0; i < paths.length; i++) {
+            try {
+                const v = paths[i]();
+                if (v && isValidGameId(String(v))) return String(v);
+            } catch (e) {}
+        }
+        // scan script tags for quizId/uuid
+        try {
+            const scripts = document.querySelectorAll('script');
+            for (let i = 0; i < scripts.length; i++) {
+                const txt = scripts[i].textContent || '';
+                let m = txt.match(/"quizId"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
+                if (m) return m[1];
+                m = txt.match(/"uuid"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"/i);
+                if (m) return m[1];
+            }
+        } catch (e) {}
+        return null;
+    }
     function sanitizeInput(val) {
         val = val.trim();
         if (val.indexOf('https//') === 0) val = val.replace('https//', 'https://');
@@ -218,6 +250,26 @@
     }
 
     function autoLoadByQuestion() {
+        const detected = detectQuizIdFromGlobals();
+        if (detected) {
+            isAutoSearching = true;
+            const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(detected);
+            fetch(detailUrl).then(function (r) { return r.json(); }).then(function (d) {
+                questions = parseQuestions(d.questions);
+                info.numQuestions = questions.length;
+                lastValidQuizID = detected;
+                input.value = detected;
+                input.style.backgroundColor = 'green';
+                status.textContent = 'Loaded: ' + (d.title || detected);
+                isAutoSearching = false;
+                onQuestionStart();
+            }).catch(function () { isAutoSearching = false; fallbackTextSearch(); });
+            return;
+        }
+        fallbackTextSearch();
+    }
+
+    function fallbackTextSearch() {
         const qText = getQuestionText();
         if (!qText) { isAutoSearching = false; return; }
         isAutoSearching = true;
