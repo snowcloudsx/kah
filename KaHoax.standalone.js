@@ -354,12 +354,20 @@
         log('loadQuizInput: ' + input.value);
         const raw = input.value;
         const quizID = sanitizeInput(raw);
-        const url = PROXY + '/api-proxy/' + encodeURIComponent(quizID);
+        const urls = [
+            'https://play.kahoot.it/rest/kahoots/' + encodeURIComponent(quizID),
+            'https://kahoot.it/rest/kahoots/' + encodeURIComponent(quizID),
+            'https://create.kahoot.it/rest/kahoots/' + encodeURIComponent(quizID),
+            PROXY + '/api-proxy/' + encodeURIComponent(quizID)
+        ];
         if (!quizID) return;
-        fetch(url).then(function (r) {
+        fetch(urls[0]).then(function (r) {
             if (!r.ok) throw new Error('fail');
             return r.json();
-        }).then(function (data) {
+        }).catch(function () { return fetch(urls[1]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+        .catch(function () { return fetch(urls[2]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+        .catch(function () { return fetch(urls[3]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+        .then(function (data) {
             questions = parseQuestions(data.questions);
             questionTexts = (data.questions || []).map(function (q) { return q.question || q.title || ''; });
             questionChoices = (data.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
@@ -405,7 +413,7 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadQuizInput(); });
 
     function searchPublicUUID(searchTerm) {
-        const url = PROXY + '/rest/kahoots/?query=' + encodeURIComponent(searchTerm);
+        const url = 'https://create.kahoot.it/rest/kahoots/?query=' + encodeURIComponent(searchTerm);
         fetch(url).then(function (r) { return r.json(); }).then(function (data) {
             const results = (data.entities && data.entities.length > 0) ? data.entities : [];
             if (results.length > 0) {
@@ -424,8 +432,17 @@
         const detected = detectQuizIdFromGlobals();
         if (detected) {
             isAutoSearching = true;
-            const detailUrl = PROXY + '/api-proxy/' + encodeURIComponent(detected);
-            fetch(detailUrl).then(function (r) { if (!r.ok) throw new Error('not found'); return r.json(); }).then(function (d) {
+            const urls = [
+                'https://play.kahoot.it/rest/kahoots/' + encodeURIComponent(detected),
+                'https://kahoot.it/rest/kahoots/' + encodeURIComponent(detected),
+                'https://create.kahoot.it/rest/kahoots/' + encodeURIComponent(detected),
+                PROXY + '/api-proxy/' + encodeURIComponent(detected)
+            ];
+            fetch(urls[0]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); })
+            .catch(function () { return fetch(urls[1]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+            .catch(function () { return fetch(urls[2]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+            .catch(function () { return fetch(urls[3]).then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); }); })
+            .then(function (d) {
                 questions = parseQuestions(d.questions);
                 questionTexts = (d.questions || []).map(function (q) { return q.question || q.title || ''; });
                 questionChoices = (d.questions || []).map(function (q) { return (q.choices || []).map(function (c) { return c.answer || ''; }); });
@@ -435,8 +452,11 @@
                 input.style.backgroundColor = 'green';
                 status.textContent = 'Loaded: ' + (d.title || detected);
                 isAutoSearching = false;
+                const qn = getQuestionNumberFromDOM();
+                if (qn !== null && !isNaN(qn)) info.questionNum = qn;
+                answeredThisRound = false;
                 onQuestionStart();
-            }).catch(function () { detectionFailed = true; isAutoSearching = false; fallbackTextSearch(); });
+            }).catch(function () { isAutoSearching = false; detectionFailed = true; status.textContent = 'Auto-detect failed - enter quiz ID manually'; });
             return;
         }
         fallbackTextSearch();
