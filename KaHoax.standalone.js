@@ -122,6 +122,21 @@
         return null;
     }
 
+    function getQuestionNumberFromDOM() {
+        try {
+            const els = document.querySelectorAll('*');
+            for (let i = 0; i < els.length; i++) {
+                const t = (els[i].textContent || '').trim();
+                let m = t.match(/Question\s*(\d+)\s*of\s*(\d+)/i);
+                if (m) return +m[1] - 1;
+                m = t.match(/^(\d+)\s*Question/i);
+                if (m) return +m[1] - 1;
+            }
+        } catch (e) {}
+        const tm = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
+        if (tm) return +tm[1] - 1;
+        return null;
+    }
     function parseQuestions(questionsJson) {
         let out = [];
         (questionsJson || []).forEach(function (question) {
@@ -561,21 +576,17 @@
     setInterval(function () {
         try {
             const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
-            if (textElement) info.questionNum = +textElement.textContent - 1;
-            else {
-                const tm = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
-                if (tm) info.questionNum = +tm[1] - 1;
-            }
+            let qn = null;
+            if (textElement) qn = +textElement.textContent - 1;
+            else qn = getQuestionNumberFromDOM();
+            if (qn !== null && !isNaN(qn)) info.questionNum = qn;
             const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', '*');
             if (hasBtns && !answeredThisRound) {
                 console.log('[KaHoax] answer buttons detected, triggering');
                 answeredThisRound = true;
-                if (textElement) info.questionNum = +textElement.textContent - 1;
-                else {
-                    const tm2 = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
-                    if (tm2) info.questionNum = +tm2[1] - 1;
-                    else info.questionNum = info.questionNum + 1;
-                }
+                const qn2 = getQuestionNumberFromDOM();
+                if (qn2 !== null && !isNaN(qn2)) info.questionNum = qn2;
+                else if (info.questionNum < 0) info.questionNum = 0;
                 info.lastAnsweredQuestion = info.questionNum;
                 if (questions.length === 0 && !isAutoSearching && !detectionFailed) autoLoadByQuestion();
                 else if (questions.length > 0) onQuestionStart();
