@@ -559,41 +559,50 @@
     }
 
     setInterval(function () {
-        const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
-        if (textElement) info.questionNum = +textElement.textContent - 1;
-        else {
-            const tm = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
-            if (tm) info.questionNum = +tm[1] - 1;
-        }
-        const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', '*');
-        if (hasBtns && !answeredThisRound) {
-            console.log('[KaHoax] answer buttons detected, triggering');
-            answeredThisRound = true;
+        try {
+            const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
             if (textElement) info.questionNum = +textElement.textContent - 1;
-            else info.questionNum = info.questionNum + 1;
-            info.lastAnsweredQuestion = info.questionNum;
-            if (questions.length === 0 && !isAutoSearching) autoLoadByQuestion();
-            else onQuestionStart();
-        } else if (!hasBtns) {
-            answeredThisRound = false;
-        }
-        if (autoAnswer && info.ILSetQuestion != info.questionNum) {
-            const ppt = Answered_PPT;
-            const incEl = FindByAttributeValue('data-functional-selector', 'score-increment', 'span');
-            if (incEl) {
-                info.ILSetQuestion = info.questionNum;
-                const increment = +incEl.textContent.split(' ')[1];
-                if (increment != 0) {
-                    inputLag += (ppt - increment) * 15;
-                    if (inputLag < 0) { inputLag -= (ppt - increment) * 15; inputLag += (ppt - increment / 2) * 15; }
-                    inputLag = Math.round(inputLag);
+            else {
+                const tm = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
+                if (tm) info.questionNum = +tm[1] - 1;
+            }
+            const hasBtns = !!FindByAttributeValue('data-functional-selector', 'answer-0', '*');
+            if (hasBtns && !answeredThisRound) {
+                console.log('[KaHoax] answer buttons detected, triggering');
+                answeredThisRound = true;
+                if (textElement) info.questionNum = +textElement.textContent - 1;
+                else {
+                    const tm2 = (document.title || '').match(/Quiz,\s*(\d+)\s*of\s*(\d+)/i);
+                    if (tm2) info.questionNum = +tm2[1] - 1;
+                    else info.questionNum = info.questionNum + 1;
+                }
+                info.lastAnsweredQuestion = info.questionNum;
+                if (questions.length === 0 && !isAutoSearching && !detectionFailed) autoLoadByQuestion();
+                else if (questions.length > 0) onQuestionStart();
+            } else if (!hasBtns) {
+                answeredThisRound = false;
+            }
+            if (autoAnswer && info.ILSetQuestion != info.questionNum) {
+                const ppt = Answered_PPT;
+                const incEl = FindByAttributeValue('data-functional-selector', 'score-increment', 'span');
+                if (incEl) {
+                    info.ILSetQuestion = info.questionNum;
+                    const increment = +incEl.textContent.split(' ')[1];
+                    if (increment != 0) {
+                        inputLag += (ppt - increment) * 15;
+                        if (inputLag < 0) { inputLag -= (ppt - increment) * 15; inputLag += (ppt - increment / 2) * 15; }
+                        inputLag = Math.round(inputLag);
+                    }
                 }
             }
-        }
-        // Ensure UI present
-        if (document.body && !document.getElementById('kahox-ui')) {
-            console.log('[KaHoax] UI missing in main loop, re-appending');
-            document.body.appendChild(ui);
+            qLabel.textContent = 'Question ' + (info.questionNum + 1) + ' / ' + (info.numQuestions > 0 ? info.numQuestions : '?');
+            // Ensure UI present
+            if (document.body && !document.getElementById('kahox-ui')) {
+                console.log('[KaHoax] UI missing in main loop, re-appending');
+                document.body.appendChild(ui);
+            }
+        } catch (e) {
+            console.error('[KaHoax] interval error:', e);
         }
     }, 1);
 })();
