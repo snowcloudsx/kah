@@ -13,6 +13,7 @@
     let networkQuizId = null;
     let answeredThisRound = false;
     let detectionFailed = false;
+    let stopped = false;
 
     function log(msg) { try { console.log('[KaHoax]', msg); } catch (e) {} }
 
@@ -307,7 +308,7 @@
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'position:absolute;top:0;right:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#ff4d4d;border-radius:0 10px 0 0;cursor:pointer;';
     ui.appendChild(closeBtn);
-    closeBtn.addEventListener('click', function () { document.body.removeChild(ui); autoAnswer = false; showAnswers = false; });
+    closeBtn.addEventListener('click', function () { stopped = true; autoAnswer = false; showAnswers = false; try { document.documentElement.removeChild(ui); } catch (e) {} console.log('[KaHoax] un.injected'); });
 
     // drag
     let dragging = false, ox, oy;
@@ -334,7 +335,7 @@
         if (!document.body) return;
         if (!document.getElementById('kahox-ui')) {
             console.log('[KaHoax] UI removed, re-appending');
-            document.body.appendChild(ui);
+            document.documentElement.appendChild(ui);
         }
     }
     setInterval(ensureUI, 1000);
@@ -574,6 +575,7 @@
     }
 
     setInterval(function () {
+        if (stopped) return;
         try {
             const textElement = FindByAttributeValue('data-functional-selector', 'question-index-counter', 'div');
             let qn = null;
@@ -588,8 +590,9 @@
                 if (qn2 !== null && !isNaN(qn2)) info.questionNum = qn2;
                 else if (info.questionNum < 0) info.questionNum = 0;
                 info.lastAnsweredQuestion = info.questionNum;
-                if (questions.length === 0 && !isAutoSearching && !detectionFailed) autoLoadByQuestion();
-                else if (questions.length > 0) onQuestionStart();
+                if (questions.length === 0 && !isAutoSearching && !detectionFailed) {
+                    console.log('[KaHoax] quiz not loaded - enter ID or click Scan');
+                } else if (questions.length > 0) onQuestionStart();
             } else if (!hasBtns) {
                 answeredThisRound = false;
             }
@@ -610,7 +613,7 @@
             // Ensure UI present
             if (document.body && !document.getElementById('kahox-ui')) {
                 console.log('[KaHoax] UI missing in main loop, re-appending');
-                document.body.appendChild(ui);
+                document.documentElement.appendChild(ui);
             }
         } catch (e) {
             console.error('[KaHoax] interval error:', e);
