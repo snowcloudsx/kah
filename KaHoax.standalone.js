@@ -1264,142 +1264,7 @@
 
     // Remove the existing githubContainer code and replace with this new modern links section
 
-    // Remove the existing githubContainer code and replace with this:
-    const linksSection = document.createElement('div');
-    linksSection.style.margin = '15px 0';
-    linksSection.style.padding = '0 15px';
-
-    // Create developer entry with multiple icons/links
-    function createDeveloperEntry(name, links = [], roles = []) {
-        const entry = document.createElement('div');
-        entry.style.display = 'flex';
-        entry.style.alignItems = 'center';
-        entry.style.margin = '8px 0';
-        entry.style.position = 'relative';
-        
-        // Developer name first
-        const devName = document.createElement('span');
-        devName.textContent = name;
-        devName.style.fontFamily = '"Montserrat", "Noto Sans Arabic", "Helvetica Neue", Helvetica, Arial, sans-serif';
-        devName.style.color = 'white';
-        devName.style.fontWeight = 'bold';
-        devName.style.marginRight = '10px';
-        entry.appendChild(devName);
-        
-        // Container for icons
-        const iconsContainer = document.createElement('div');
-        iconsContainer.style.display = 'flex';
-        iconsContainer.style.gap = '8px';
-        
-        // Add each link as an icon
-        links.forEach(link => {
-            const iconLink = document.createElement('a');
-            iconLink.href = link.url;
-            iconLink.target = '_blank';
-            iconLink.title = link.title;
-            iconLink.style.display = 'flex';
-            iconLink.style.alignItems = 'center';
-            iconLink.style.justifyContent = 'center';
-            iconLink.style.color = '#03A9F4';
-            iconLink.style.textDecoration = 'none';
-            
-            const iconSpan = document.createElement('span');
-            iconSpan.innerHTML = link.icon;
-            iconSpan.style.width = '16px';
-            iconSpan.style.height = '16px';
-            iconSpan.style.display = 'flex';
-            iconSpan.style.justifyContent = 'center';
-            iconSpan.style.alignItems = 'center';
-            
-            iconLink.appendChild(iconSpan);
-            iconsContainer.appendChild(iconLink);
-        });
-        
-        entry.appendChild(iconsContainer);
-        
-        // Role-specific badge colors
-        const badgeColors = {
-            'UI': '#E91E63',          // Pink/Red
-            'Mobile': '#2196F3',      // Blue
-            'Features': '#9C27B0',    // Purple
-            'Base': '#4CAF50',        // Green
-            'Bug Tester': '#FF9800',  // Orange
-            'Old UI': '#795548',      // Brown
-            'API': '#607D8B'          // Blue Gray
-        };
-        
-        // Function to get size factor based on screen width
-        const getBadgeSizeFactor = () => {
-            return window.innerWidth < 385 ? 0.82 : 1;
-        };
-        
-        // Add roles badges - display multiple small badges
-        if (roles && roles.length > 0) {
-            const badgesContainer = document.createElement('div');
-            badgesContainer.className = 'role-badges-container';
-            badgesContainer.style.position = 'absolute';
-            badgesContainer.style.right = '0';
-            badgesContainer.style.top = '50%';
-            badgesContainer.style.transform = 'translateY(-50%)';
-            badgesContainer.style.display = 'flex';
-            badgesContainer.style.gap = '4px';
-            
-            roles.forEach((role) => {
-                const badge = document.createElement('div');
-                badge.className = 'role-badge';
-                badge.dataset.role = role;
-                badge.style.backgroundColor = badgeColors[role] || '#888888';
-                badge.style.color = 'white';
-                badge.style.fontSize = '0.7em';
-                badge.style.padding = '2px 5px';
-                badge.style.borderRadius = '10px';
-                badge.style.opacity = '0.7';
-                badge.style.cursor = 'default';
-                badge.style.fontFamily = '"Montserrat", "Noto Sans Arabic", "Helvetica Neue", Helvetica, Arial, sans-serif';
-                badge.style.whiteSpace = 'nowrap';
-                badge.textContent = role;
-                
-                badgesContainer.appendChild(badge);
-            });
-            
-            entry.appendChild(badgesContainer);
-        }
-        
-        return entry;
-    }
-
-    // SVG icons (using the provided SVGs)
-    const webIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
-
-    const toolIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>';
-
-    // GitHub icon - using provided SVG
-    const githubIcon = '<svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" fill="none" width="16" height="16"><path stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="12" d="M120.755 170c.03-4.669.059-20.874.059-27.29 0-9.272-3.167-15.339-6.719-18.41 22.051-2.464 45.201-10.863 45.201-49.067 0-10.855-3.824-19.735-10.175-26.683 1.017-2.516 4.413-12.63-.987-26.32 0 0-8.296-2.672-27.202 10.204-7.912-2.213-16.371-3.308-24.784-3.352-8.414.044-16.872 1.14-24.785 3.352C52.457 19.558 44.162 22.23 44.162 22.23c-5.4 13.69-2.004 23.804-.987 26.32C36.824 55.498 33 64.378 33 75.233c0 38.204 23.149 46.603 45.2 49.067-3.551 3.071-6.719 9.138-6.719 18.41 0 6.416.03 22.621.059 27.29M27 130c9.939.703 15.67 9.735 15.67 9.735 8.834 15.199 23.178 10.803 28.815 8.265"></path></svg>';
-
-    // Add developers with their links and roles in the requested order
-    // 1. KRWCLASSIC with roles
-    linksSection.appendChild(createDeveloperEntry('KRWCLASSIC', [
-        {icon: githubIcon, url: 'https://github.com/KRWCLASSIC', title: 'GitHub'},
-    ], ['UI', 'Bug Tester', 'Features']));
-
-    // 2. John Wee with roles (removed "Idea")
-    linksSection.appendChild(createDeveloperEntry('johnweeky', [
-        {icon: githubIcon, url: 'https://github.com/johnweeky', title: 'GitHub'},
-        {icon: webIcon, url: 'https://johnw.ee', title: 'Website'},
-        {icon: toolIcon, url: 'https://landing.kahoot.space', title: 'JW Tool Suite'}
-    ], ['API', 'Mobile', 'Features']));
-
-    // 3. jokeri2222 with roles
-    linksSection.appendChild(createDeveloperEntry('jokeri2222', [
-        {icon: githubIcon, url: 'https://github.com/jokeri2222', title: 'GitHub'}
-    ], ['Base', 'Old UI', 'Features']));
-
-    // 4. Epic0001 with roles
-    linksSection.appendChild(createDeveloperEntry('Epic0001', [
-        {icon: githubIcon, url: 'https://github.com/Epic0001', title: 'GitHub'}
-    ], ['Bug Tester']));
-
-    uiElement.appendChild(linksSection);
+    // (credits section removed)
 
     closeButton.addEventListener('click', () => {
         document.body.removeChild(uiElement);
@@ -1418,7 +1283,6 @@
             questionsLabel.style.display = 'none';
             gamePinContainer.style.display = 'none';
             allQuestionsContainer.style.display = 'none';
-            linksSection.style.display = 'none';
             sliderContainer.style.display = 'none';
             answeringContainer.style.display = 'none';
             uiElement.style.height = '40px';
@@ -1431,7 +1295,6 @@
             questionsLabel.style.display = 'block';
             gamePinContainer.style.display = 'flex';
             allQuestionsContainer.style.display = 'flex';
-            linksSection.style.display = 'block';
             uiElement.style.height = 'auto';
             uiElement.style.maxHeight = '90vh';
             uiElement.style.overflowY = 'auto';
@@ -1959,12 +1822,46 @@
     }
 
     function getQuestionText() {
-        const sels = ['.question-title__Title-sc-12qj0yr-1', '[data-functional-selector="question-title"]', '[data-functional-selector="question-title-text"]', '.question-title'];
+        const sels = [
+            '[data-functional-selector="block-title"]',
+            '[data-functional-selector="question-title"]',
+            '[data-functional-selector="question-title-text"]',
+            '[class*="question-title"]',
+            '[class*="QuestionTitle"]',
+            '[class*="question-text"]',
+            '[class*="QuestionText"]',
+            '[class*="media-text"] p',
+            '[class*="MediaText"] p',
+            '[class*="question"] p',
+            '[class*="Question"] p',
+            '[class*="title-text"]',
+            '[class*="TitleText"]',
+            '[class*="block-text"]',
+            '[class*="BlockText"]',
+            '.question-title__Title-sc-12qj0yr-1'
+        ];
         for (let i = 0; i < sels.length; i++) {
-            const el = document.querySelector(sels[i]);
-            if (el && el.textContent && el.textContent.trim()) return el.textContent.trim();
+            try {
+                const els = document.querySelectorAll(sels[i]);
+                for (let j = 0; j < els.length; j++) {
+                    const t = els[j].textContent ? els[j].textContent.trim() : '';
+                    if (t && t.length > 3 && t.length < 500) return t;
+                }
+            } catch (e) {}
         }
-        // Fallback: largest text node among answer siblings
+        // Fallback: scan visible text nodes for a question-like string
+        try {
+            const candidates = document.querySelectorAll('p, div, span, h1, h2, h3, h4');
+            for (let i = 0; i < candidates.length; i++) {
+                const el = candidates[i];
+                if (!el.offsetParent || el.offsetWidth < 100) continue;
+                if (el.children.length > 5) continue;
+                const t = el.textContent ? el.textContent.trim() : '';
+                if (t && t.length > 10 && t.length < 500) {
+                    if (t.indexOf('?') !== -1 || t.indexOf('___') !== -1 || t.indexOf('...') !== -1) return t;
+                }
+            }
+        } catch (e) {}
         return null;
     }
 
